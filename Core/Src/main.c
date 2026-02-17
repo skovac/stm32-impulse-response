@@ -44,6 +44,8 @@
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc;
 
+TIM_HandleTypeDef htim2;
+
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -55,13 +57,16 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_ADC_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_3);
+}
 /* USER CODE END 0 */
 
 /**
@@ -78,8 +83,7 @@ int main(void) {
      * Configuration--------------------------------------------------------*/
 
     /* Reset of all peripherals, Initializes the Flash interface and the
-     * Systick.
-     */
+     * Systick. */
     HAL_Init();
 
     /* USER CODE BEGIN Init */
@@ -97,20 +101,18 @@ int main(void) {
     MX_GPIO_Init();
     MX_USART2_UART_Init();
     MX_ADC_Init();
+    MX_TIM2_Init();
     /* USER CODE BEGIN 2 */
-
+    HAL_TIM_Base_Start_IT(&htim2);
     /* USER CODE END 2 */
 
     /* Infinite loop */
     /* USER CODE BEGIN WHILE */
+    uint32_t count = 0;
     while (1) {
-        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_3);
-        uint32_t adc_value;
-        HAL_ADC_Start(&hadc);
-        HAL_ADC_PollForConversion(&hadc, HAL_MAX_DELAY);
-        adc_value = HAL_ADC_GetValue(&hadc);
-        printf("ADC: %" PRIu32 "(%" PRIu32 "mV)\r\n", adc_value,
-               (adc_value * 3300) / 4096);
+        // HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_3);
+        printf("here %u\r\n", count);
+        ++count;
         HAL_Delay(1000);
         /* USER CODE END WHILE */
 
@@ -131,10 +133,9 @@ void SystemClock_Config(void) {
      * in the RCC_OscInitTypeDef structure.
      */
     RCC_OscInitStruct.OscillatorType =
-        RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_HSI14;
-    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+        RCC_OSCILLATORTYPE_HSI14 | RCC_OSCILLATORTYPE_HSI48;
+    RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
     RCC_OscInitStruct.HSI14State = RCC_HSI14_ON;
-    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
     RCC_OscInitStruct.HSI14CalibrationValue = 16;
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
@@ -145,11 +146,11 @@ void SystemClock_Config(void) {
      */
     RCC_ClkInitStruct.ClockType =
         RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1;
-    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI48;
     RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
     RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
-    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) {
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK) {
         Error_Handler();
     }
 }
@@ -203,6 +204,47 @@ static void MX_ADC_Init(void) {
     /* USER CODE BEGIN ADC_Init 2 */
 
     /* USER CODE END ADC_Init 2 */
+}
+
+/**
+ * @brief TIM2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM2_Init(void) {
+
+    /* USER CODE BEGIN TIM2_Init 0 */
+
+    /* USER CODE END TIM2_Init 0 */
+
+    TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+    TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+    /* USER CODE BEGIN TIM2_Init 1 */
+
+    /* USER CODE END TIM2_Init 1 */
+    htim2.Instance = TIM2;
+    htim2.Init.Prescaler = 9999;
+    htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim2.Init.Period = 4799;
+    htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    if (HAL_TIM_Base_Init(&htim2) != HAL_OK) {
+        Error_Handler();
+    }
+    sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+    if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK) {
+        Error_Handler();
+    }
+    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+    if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) !=
+        HAL_OK) {
+        Error_Handler();
+    }
+    /* USER CODE BEGIN TIM2_Init 2 */
+
+    /* USER CODE END TIM2_Init 2 */
 }
 
 /**
