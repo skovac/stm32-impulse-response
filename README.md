@@ -20,6 +20,11 @@ This project aims to implement an impulse response convolution for:
 
 🚧 **In Development** - nothing works, but the led is blinking and I'm reading voltage from PA0
 
+## Dev env setup
+
+Open up STM32CubeMX and load stm32_impulse_response.ioc at the root of this project. Generate the HAL code.
+If needed, regenerate compile_commands.json by running `bear -- make`.
+
 ## Building
 
 ```bash
